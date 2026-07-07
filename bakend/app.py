@@ -78,7 +78,7 @@ def obtener_rutas():
             sql = """
                 SELECT 
                     r.id_ruta AS id,
-                    CONCAT('Ruta ', r.id_ruta) AS codigo,
+                    CONCAT('ruta ', r.id_ruta) AS codigo,
                     r.nombre AS nombre,
                     er.nombre AS estado
                 FROM Ruta r
@@ -406,7 +406,7 @@ def registro():
                     return jsonify({"error": "Token inválido o ya utilizado"}), 400
 
             # 2. Insertar Usuario base
-            sql_usuario = "INSERT INTO Usuario (nombre, apellido_paterno, apellido_materno, correo, telefono, password) VALUES (%s, %s, %s, %s, %s, %s)"
+            sql_usuario = "INSERT INTO usuario (nombre, apellido_paterno, apellido_materno, correo, telefono, password) VALUES (%s, %s, %s, %s, %s, %s)"
             cursor.execute(sql_usuario, (nombre, apellido_p, apellido_m, correo, telefono, password))
             id_usuario_creado = cursor.lastrowid
 
