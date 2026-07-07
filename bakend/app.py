@@ -33,7 +33,7 @@ def login():
 
         conexion = conectar_bd()
         with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
-            sql = "SELECT id_usuario, nombre FROM Usuario WHERE correo = %s AND password = %s"
+            sql = "SELECT id_usuario, nombre FROM usuario WHERE correo = %s AND password = %s"
             cursor.execute(sql, (correo, password))
             usuario = cursor.fetchone()
 
@@ -41,13 +41,13 @@ def login():
                 id_user = usuario['id_usuario']
                 
                 # Buscamos si es Administrador o Chofer
-                cursor.execute("SELECT id_administrador FROM Administrador WHERE id_usuario = %s", (id_user,))
+                cursor.execute("SELECT id_administrador FROM administrador WHERE id_usuario = %s", (id_user,))
                 admin = cursor.fetchone()
                 
                 if admin:
                     return jsonify({"id_usuario": id_user, "rol": "ADMIN"}), 200
                 
-                cursor.execute("SELECT id_chofer FROM Chofer WHERE id_usuario = %s", (id_user,))
+                cursor.execute("SELECT id_chofer FROM chofer WHERE id_usuario = %s", (id_user,))
                 chofer = cursor.fetchone()
                 
                 if chofer:
@@ -82,7 +82,7 @@ def obtener_rutas():
                     r.nombre AS nombre,
                     er.nombre AS estado
                 FROM Ruta r
-                INNER JOIN Estado_Ruta er ON r.id_estado_ruta = er.id_estado_ruta
+                INNER JOIN estado_ruta er ON r.id_estado_ruta = er.id_estado_ruta
             """
             cursor.execute(sql)
             rutas = cursor.fetchall()
@@ -113,7 +113,7 @@ def cambiar_estado_ruta(id_ruta):
         
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            sql = "UPDATE Ruta SET id_estado_ruta = %s WHERE id_ruta = %s"
+            sql = "UPDATE ruta SET id_estado_ruta = %s WHERE id_ruta = %s"
             cursor.execute(sql, (id_estado, id_ruta))
             conexion.commit()
         return jsonify({"mensaje": "Estado de ruta actualizado con éxito"}), 200
@@ -132,7 +132,7 @@ def obtener_zonas():
     try:
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            cursor.execute("SELECT nombre FROM Zona")
+            cursor.execute("SELECT nombre FROM zona")
             zonas = cursor.fetchall()
             lista_zonas = [z['nombre'] for z in zonas]
         return jsonify(lista_zonas), 200
@@ -151,12 +151,12 @@ def obtener_rutas_por_zona(nombre_zona):
             sql = """
                 SELECT 
                     r.id_ruta AS id,
-                    CONCAT('Ruta ', r.id_ruta) AS codigo,
+                    CONCAT('ruta ', r.id_ruta) AS codigo,
                     r.nombre AS nombre,
                     er.nombre AS estado
-                FROM Ruta r
-                INNER JOIN Zona z ON r.id_zona = z.id_zona
-                INNER JOIN Estado_Ruta er ON r.id_estado_ruta = er.id_estado_ruta
+                FROM ruta r
+                INNER JOIN zona z ON r.id_zona = z.id_zona
+                INNER JOIN estado_ruta er ON r.id_estado_ruta = er.id_estado_ruta
                 WHERE z.nombre = %s
             """
             cursor.execute(sql, (nombre_zona,))
@@ -190,7 +190,7 @@ def alta_zona():
         nombre = datos.get('nombre')
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            cursor.execute("INSERT INTO Zona (nombre) VALUES (%s)", (nombre,))
+            cursor.execute("INSERT INTO zona (nombre) VALUES (%s)", (nombre,))
             conexion.commit()
         return jsonify({"mensaje": "Zona registrada correctamente"}), 201
     except Exception as e:
@@ -212,7 +212,7 @@ def alta_ruta():
 
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            cursor.execute("SELECT id_zona FROM Zona WHERE nombre = %s", (nombre_zona,))
+            cursor.execute("SELECT id_zona FROM zona WHERE nombre = %s", (nombre_zona,))
             resultado_zona = cursor.fetchone()
 
             if not resultado_zona:
@@ -247,7 +247,7 @@ def alta_parada():
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
             # Esta es la consulta correcta para tu tabla
-            sql = "INSERT INTO Parada (nombre_parada, id_ruta) VALUES (%s, %s)"
+            sql = "INSERT INTO parada (nombre_parada, id_ruta) VALUES (%s, %s)"
             cursor.execute(sql, (nombre, id_ruta))
             conexion.commit()
             
@@ -273,7 +273,7 @@ def crear_reporte():
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
             sql = """
-                INSERT INTO Reporte (id_pasajero, id_unidad, id_tipo_reporte, fecha_reporte, descripcion)
+                INSERT INTO reporte (id_pasajero, id_unidad, id_tipo_reporte, fecha_reporte, descripcion)
                 VALUES (%s, %s, %s, NOW(), %s)
             """
             cursor.execute(sql, (id_pasajero, id_unidad, id_tipo_reporte, descripcion))
@@ -298,10 +298,10 @@ def ver_reportes():
                     uni.numero_economico AS unidad,
                     r.descripcion AS motivo
                 FROM Reporte r
-                INNER JOIN Unidad uni ON r.id_unidad = uni.id_unidad
-                INNER JOIN Chofer_Unidad cu ON uni.id_unidad = cu.id_unidad
-                INNER JOIN Chofer ch ON cu.id_chofer = ch.id_chofer
-                INNER JOIN Usuario u ON ch.id_usuario = u.id_usuario
+                INNER JOIN unidad uni ON r.id_unidad = uni.id_unidad
+                INNER JOIN chofer_unidad cu ON uni.id_unidad = cu.id_unidad
+                INNER JOIN chofer ch ON cu.id_chofer = ch.id_chofer
+                INNER JOIN usuario u ON ch.id_usuario = u.id_usuario
             """
             cursor.execute(sql)
             reportes = cursor.fetchall()
@@ -324,7 +324,7 @@ def aplicar_sancion():
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
             sql = """
-                INSERT INTO Sancion (id_unidad, id_administrador, motivo, fecha_inicio, fecha_fin)
+                INSERT INTO sancion (id_unidad, id_administrador, motivo, fecha_inicio, fecha_fin)
                 VALUES (%s, %s, %s, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 3 DAY))
             """
             cursor.execute(sql, (id_unidad, id_administrador, motivo))
@@ -346,10 +346,10 @@ def registrar_cambio_ruta():
 
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            sql_cambio = "INSERT INTO Cambio_Ruta (id_ruta, fecha_inicio, descripcion) VALUES (%s, CURDATE(), %s)"
+            sql_cambio = "INSERT INTO cambio_ruta (id_ruta, fecha_inicio, descripcion) VALUES (%s, CURDATE(), %s)"
             cursor.execute(sql_cambio, (id_ruta, descripcion))
             
-            sql_notif = "INSERT INTO Notificacion (titulo, fecha_mensaje, id_ruta) VALUES (%s, NOW(), %s)"
+            sql_notif = "INSERT INTO notificacion (titulo, fecha_mensaje, id_ruta) VALUES (%s, NOW(), %s)"
             cursor.execute(sql_notif, (f"Cambio Operativo: {descripcion}", id_ruta))
             
             conexion.commit()
@@ -414,16 +414,16 @@ def registro():
             folio_asignado = None
             
             if rol_normalizado == "PASAJERO":
-                cursor.execute("INSERT INTO Pasajero (id_usuario) VALUES (%s)", (id_usuario_creado,))
+                cursor.execute("INSERT INTO pasajero (id_usuario) VALUES (%s)", (id_usuario_creado,))
             
             elif rol_normalizado in ["CONDUCTOR", "CHOFER"]:
-                cursor.execute("INSERT INTO Chofer (id_usuario) VALUES (%s)", (id_usuario_creado,))
+                cursor.execute("INSERT INTO chofer (id_usuario) VALUES (%s)", (id_usuario_creado,))
                 cursor.execute("UPDATE tokens_registro SET usado = 1 WHERE token_autorizacion = %s", (token_enviado.strip(),))
             
             elif rol_normalizado in ["ADMIN", "ADMINISTRADOR"]:
                 folio_asignado = f"ADM-{random.randint(1000, 9999)}"
-                cursor.execute("INSERT INTO Administrador (id_usuario, folio_unico) VALUES (%s, %s)", (id_usuario_creado, folio_asignado))
-                cursor.execute("UPDATE Usuario SET folio_unico = %s WHERE id_usuario = %s", (folio_asignado, id_usuario_creado))
+                cursor.execute("INSERT INTO administrador (id_usuario, folio_unico) VALUES (%s, %s)", (id_usuario_creado, folio_asignado))
+                cursor.execute("UPDATE usuario SET folio_unico = %s WHERE id_usuario = %s", (folio_asignado, id_usuario_creado))
                 cursor.execute("UPDATE tokens_registro SET usado = 1 WHERE token_autorizacion = %s", (token_enviado.strip(),))
 
             conexion.commit()
@@ -450,11 +450,11 @@ def actualizar_registro():
     try:
         with conexion.cursor() as cursor:
             # 1. Actualizar Unidad
-            sql_unidad = "UPDATE Unidad SET numero_economico = %s, placas = %s WHERE id_chofer = %s"
+            sql_unidad = "UPDATE unidad SET numero_economico = %s, placas = %s WHERE id_chofer = %s"
             cursor.execute(sql_unidad, (data['numero_economico'], data['placas'], data['id_chofer']))
             
-            # 2. Actualizar Ruta (en la tabla de Asignación)
-            sql_ruta = "UPDATE Asignacion_Ruta SET id_ruta = %s WHERE id_chofer = %s"
+            # 2. Actualizar ruta (en la tabla de Asignación)
+            sql_ruta = "UPDATE asignacion_ruta SET id_ruta = %s WHERE id_chofer = %s"
             cursor.execute(sql_ruta, (data['id_ruta'], data['id_chofer']))
             
             conexion.commit()
@@ -473,9 +473,9 @@ def obtener_estado_chofer(id_chofer):
                     u.placa, 
                     r.nombre AS nombre_ruta
                 FROM Chofer_Unidad cu
-                JOIN Unidad u ON cu.id_unidad = u.id_unidad
-                JOIN Asignacion_Ruta ar ON cu.id_chofer = ar.id_chofer
-                JOIN Ruta r ON ar.id_ruta = r.id_ruta
+                JOIN unidad u ON cu.id_unidad = u.id_unidad
+                JOIN asignacion_ruta ar ON cu.id_chofer = ar.id_chofer
+                JOIN ruta r ON ar.id_ruta = r.id_ruta
                 WHERE cu.id_chofer = %s
             """
             cursor.execute(sql, (id_chofer,))
@@ -501,13 +501,13 @@ def viajes_activos(zona):
                     c.id_control, c.hora_salida, r.nombre AS nombreRuta, 
                     u.numero_economico AS numeroEconomico, us.nombre AS choferNombre
                 FROM control_operativo c
-                JOIN Asignacion_Ruta ar ON c.id_asignacion = ar.id_asignacion
-                JOIN Ruta r ON ar.id_ruta = r.id_ruta
-                JOIN Chofer ch ON ar.id_chofer = ch.id_chofer
-                JOIN Usuario us ON ch.id_usuario = us.id_usuario
-                JOIN Chofer_Unidad cu ON ch.id_chofer = cu.id_chofer
-                JOIN Unidad u ON cu.id_unidad = u.id_unidad
-                JOIN Zona z ON r.id_zona = z.id_zona
+                JOIN asignacion_ruta ar ON c.id_asignacion = ar.id_asignacion
+                JOIN ruta r ON ar.id_ruta = r.id_ruta
+                JOIN chofer ch ON ar.id_chofer = ch.id_chofer
+                JOIN usuario us ON ch.id_usuario = us.id_usuario
+                JOIN chofer_Unidad cu ON ch.id_chofer = cu.id_chofer
+                JOIN unidad u ON cu.id_unidad = u.id_unidad
+                JOIN zona z ON r.id_zona = z.id_zona
                 WHERE z.nombre = %s AND c.hora_llegada IS NULL
             """
             cursor.execute(sql, (zona.strip(),))
@@ -588,7 +588,7 @@ def vincular_unidad():
             id_unidad = unidad['id_unidad'] if unidad else None
             
             if not id_unidad:
-                cursor.execute("INSERT INTO Unidad (placa, numero_economico) VALUES (%s, %s)", (data.get('placas', 'SIN-PLACAS'), data['numero_economico']))
+                cursor.execute("INSERT INTO unidad (placa, numero_economico) VALUES (%s, %s)", (data.get('placas', 'SIN-PLACAS'), data['numero_economico']))
                 id_unidad = cursor.lastrowid
             
             cursor.execute("DELETE FROM chofer_unidad WHERE id_chofer = %s", (data['id_chofer'],))
@@ -621,11 +621,11 @@ def choferes_por_ruta(id_ruta):
                 SELECT 
                     ar.id_asignacion,
                     CONCAT('Unidad: ', u.numero_economico, ' - Chofer: ', us.nombre) AS infoDespliegue
-                FROM Asignacion_Ruta ar
-                JOIN Chofer ch ON ar.id_chofer = ch.id_chofer
-                JOIN Usuario us ON ch.id_usuario = us.id_usuario
-                JOIN Chofer_Unidad cu ON ch.id_chofer = cu.id_chofer
-                JOIN Unidad u ON cu.id_unidad = u.id_unidad
+                FROM asignacion_ruta ar
+                JOIN chofer ch ON ar.id_chofer = ch.id_chofer
+                JOIN usuario us ON ch.id_usuario = us.id_usuario
+                JOIN chofer_unidad cu ON ch.id_chofer = cu.id_chofer
+                JOIN unidad u ON cu.id_unidad = u.id_unidad
                 WHERE ar.id_ruta = %s
             """
             cursor.execute(sql, (id_ruta,))
@@ -639,7 +639,7 @@ def asignar_ruta_chofer():
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
             # Insertamos una nueva asignación con la fecha de hoy
-            sql = "INSERT INTO Asignacion_Ruta (id_chofer, id_ruta, fecha_asignacion) VALUES (%s, %s, CURDATE())"
+            sql = "INSERT INTO asignacion_ruta (id_chofer, id_ruta, fecha_asignacion) VALUES (%s, %s, CURDATE())"
             cursor.execute(sql, (data['id_chofer'], data['id_ruta']))
             conexion.commit()
         return jsonify({"mensaje": "Ruta asignada exitosamente"}), 201
@@ -666,7 +666,7 @@ def generar_token():
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
             # CORRECCIÓN 1: Usamos 'folio_unico' porque así se llama en tu tabla
-            sql_buscar = "SELECT id_administrador FROM Administrador WHERE folio_unico = %s"
+            sql_buscar = "SELECT id_administrador FROM administrador WHERE folio_unico = %s"
             cursor.execute(sql_buscar, (folio_admin,))
             resultado = cursor.fetchone()
 
