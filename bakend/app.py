@@ -355,7 +355,7 @@ def registro():
             # 4. Lógica según rol
             folio_asignado = None
             if rol == "PASAJERO":
-                cursor.execute("INSERT INTO Pasajero (id_usuario) VALUES (%s)", (id_usuario_creado,))
+                cursor.execute("INSERT INTO pasajero (id_usuario) VALUES (%s)", (id_usuario_creado,))
             
             elif rol in ["CONDUCTOR", "CHOFER"]:
                 cursor.execute("INSERT INTO chofer (id_usuario) VALUES (%s)", (id_usuario_creado,))
