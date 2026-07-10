@@ -609,7 +609,7 @@ def obtener_paradas_por_ruta(id_ruta):
     conexion = conectar_bd()
     try:
         with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
-            sql = "SELECT id_parada, nombre_parada FROM Parada WHERE id_ruta = %s"
+            sql = "SELECT id_parada, nombre_parada FROM parada WHERE id_ruta = %s"
             cursor.execute(sql, (id_ruta,))
             return jsonify(cursor.fetchall()), 200
     finally:
