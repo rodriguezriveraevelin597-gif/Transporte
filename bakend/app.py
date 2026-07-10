@@ -117,7 +117,7 @@ def cambiar_estado_ruta(id_ruta):
         
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            sql = "UPDATE Ruta SET id_estado_ruta = %s WHERE id_ruta = %s"
+            sql = "UPDATE ruta SET id_estado_ruta = %s WHERE id_ruta = %s"
             cursor.execute(sql, (id_estado, id_ruta))
             conexion.commit()
         return jsonify({"mensaje": "Estado de ruta actualizado con éxito"}), 200
