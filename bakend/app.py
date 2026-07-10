@@ -85,7 +85,7 @@ def obtener_rutas():
                     CONCAT('ruta ', r.id_ruta) AS codigo,
                     r.nombre AS nombre,
                     er.nombre AS estado
-                FROM Ruta r
+                FROM ruta r
                 INNER JOIN estado_ruta er ON r.id_estado_ruta = er.id_estado_ruta
             """
             cursor.execute(sql)
@@ -158,7 +158,7 @@ def obtener_rutas_por_zona(nombre_zona):
                     CONCAT('ruta ', r.id_ruta) AS codigo,
                     r.nombre AS nombre,
                     er.nombre AS estado
-                FROM Ruta r
+                FROM ruta r
                 INNER JOIN zona z ON r.id_zona = z.id_zona
                 INNER JOIN estado_ruta er ON r.id_estado_ruta = er.id_estado_ruta
                 WHERE z.nombre = %s
@@ -225,7 +225,7 @@ def alta_ruta():
             id_zona_real = resultado_zona['id_zona']
 
             query = """
-                INSERT INTO Ruta (nombre, id_estado_ruta, id_zona) 
+                INSERT INTO ruta (nombre, id_estado_ruta, id_zona) 
                 VALUES (%s, %s, %s)
             """
             cursor.execute(query, (nombre_ruta, 1, id_zona_real))
