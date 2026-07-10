@@ -784,62 +784,58 @@ def calcular_trayecto():
     ruta_nombre = data.get('ruta_nombre')
     inicio_nombre = data.get('inicio_nombre')
     final_nombre = data.get('final_nombre')
-    
+
+    if not all([ruta_nombre, inicio_nombre, final_nombre]):
+        return jsonify({"error": "Faltan datos en la petición"}), 400
+
     connection = conectar_bd()
-    cursor = connection.cursor(pymysql.cursors.DictCursor)
-    
     try:
-        # 1. Búsqueda segura de Ruta
-        cursor.execute("SELECT id_ruta FROM ruta WHERE nombre = %s", (ruta_nombre,))
-        ruta = cursor.fetchone()
-        if not ruta:
-            return jsonify({"error": f"Ruta '{ruta_nombre}' no encontrada"}), 404
-        id_ruta = ruta['id_ruta']
-        
-        # 2. Búsqueda segura de Paradas
-        cursor.execute("SELECT id_parada FROM parada WHERE nombre_parada = %s", (inicio_nombre,))
-        inicio = cursor.fetchone()
-        if not inicio:
-            return jsonify({"error": f"Parada inicial '{inicio_nombre}' no encontrada"}), 404
-        id_inicio = inicio['id_parada']
-        
-        cursor.execute("SELECT id_parada FROM parada WHERE nombre_parada = %s", (final_nombre,))
-        final = cursor.fetchone()
-        if not final:
-            return jsonify({"error": f"Parada final '{final_nombre}' no encontrada"}), 404
-        id_final = final['id_parada']
-        
-        # 3. Búsqueda de Tarifas
-        cursor.execute("SELECT valor_actual FROM configuracion_tarifa WHERE id_parametro = 'tarifa_base'")
-        res_base = cursor.fetchone()
-        base = float(res_base['valor_actual']) if res_base else 0.0
-        
-        cursor.execute("SELECT valor_actual FROM configuracion_tarifa WHERE id_parametro = 'incremento_por_km'")
-        res_inc = cursor.fetchone()
-        incremento = float(res_inc['valor_actual']) if res_inc else 0.0
-        
-        # 4. Cálculo
-        num_paradas = abs(id_final - id_inicio)
-        costo_total = base + (num_paradas * incremento)
-        
-        # 5. Registro
-        query = """
-            INSERT INTO trayecto (id_ruta, id_parada_inicio, id_parada_fin, costo, frecuencia)
-            VALUES (%s, %s, %s, %s, 1)
-            ON DUPLICATE KEY UPDATE frecuencia = frecuencia + 1, costo = %s
-        """
-        cursor.execute(query, (id_ruta, id_inicio, id_final, costo_total, costo_total))
-        connection.commit()
-        
-        return jsonify({"costo": costo_total}), 200
-        
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            # 1. Obtener ID Ruta
+            cursor.execute("SELECT id_ruta FROM Ruta WHERE nombre = %s", (ruta_nombre,))
+            ruta = cursor.fetchone()
+            if not ruta: return jsonify({"error": "Ruta no encontrada"}), 404
+            id_ruta = ruta['id_ruta']
+
+            # 2. Obtener ORDEN de las paradas (Más seguro que el ID)
+            cursor.execute("SELECT orden FROM Parada WHERE nombre_parada = %s AND id_ruta = %s", (inicio_nombre, id_ruta))
+            inicio = cursor.fetchone()
+            if not inicio: return jsonify({"error": "Parada inicial no encontrada"}), 404
+            
+            cursor.execute("SELECT orden FROM Parada WHERE nombre_parada = %s AND id_ruta = %s", (final_nombre, id_ruta))
+            final = cursor.fetchone()
+            if not final: return jsonify({"error": "Parada final no encontrada"}), 404
+
+            # 3. Cálculo de tarifa
+            cursor.execute("SELECT valor_actual FROM configuracion_tarifa WHERE id_parametro = 'tarifa_base'")
+            res_base = cursor.fetchone()
+            base = float(res_base['valor_actual']) if res_base else 0.0
+
+            cursor.execute("SELECT valor_actual FROM configuracion_tarifa WHERE id_parametro = 'incremento_por_km'")
+            res_inc = cursor.fetchone()
+            incremento = float(res_inc['valor_actual']) if res_inc else 0.0
+
+            # 4. Lógica de costo real
+            num_paradas = abs(final['orden'] - inicio['orden'])
+            costo_total = base + (num_paradas * incremento)
+
+            # 5. Registro (Insertar o actualizar)
+            query = """
+                INSERT INTO trayecto (id_ruta, id_parada_inicio, id_parada_fin, costo, frecuencia)
+                VALUES (%s, (SELECT id_parada FROM Parada WHERE nombre_parada=%s AND id_ruta=%s), 
+                            (SELECT id_parada FROM Parada WHERE nombre_parada=%s AND id_ruta=%s), %s, 1)
+                ON DUPLICATE KEY UPDATE frecuencia = frecuencia + 1, costo = %s
+            """
+            cursor.execute(query, (id_ruta, inicio_nombre, id_ruta, final_nombre, id_ruta, costo_total, costo_total))
+            connection.commit()
+
+            return jsonify({"costo": float(costo_total)}), 200
+
     except Exception as e:
-        print(f"Error en calcular_trayecto: {e}")
+        print(f"DEBUG ERROR: {e}") # Mira esto en tu terminal
         return jsonify({"error": str(e)}), 500
     finally:
-        cursor.close()
         connection.close()
-
 #====================Reportes===================
 @app.route('/api/tipos_reporte', methods=['GET'])
 def obtener_tipos():
