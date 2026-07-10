@@ -82,7 +82,7 @@ def obtener_rutas():
             sql = """
                 SELECT 
                     r.id_ruta AS id,
-                    CONCAT('Ruta ', r.id_ruta) AS codigo,
+                    CONCAT('ruta ', r.id_ruta) AS codigo,
                     r.nombre AS nombre,
                     er.nombre AS estado
                 FROM Ruta r
@@ -136,7 +136,7 @@ def obtener_zonas():
     try:
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            cursor.execute("SELECT nombre FROM Zona")
+            cursor.execute("SELECT nombre FROM zona")
             zonas = cursor.fetchall()
             lista_zonas = [z['nombre'] for z in zonas]
         return jsonify(lista_zonas), 200
@@ -155,7 +155,7 @@ def obtener_rutas_por_zona(nombre_zona):
             sql = """
                 SELECT 
                     r.id_ruta AS id,
-                    CONCAT('Ruta ', r.id_ruta) AS codigo,
+                    CONCAT('ruta ', r.id_ruta) AS codigo,
                     r.nombre AS nombre,
                     er.nombre AS estado
                 FROM Ruta r
