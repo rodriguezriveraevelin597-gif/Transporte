@@ -37,7 +37,7 @@ def login():
 
         conexion = conectar_bd()
         with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
-            sql = "SELECT id_usuario, nombre FROM Usuario WHERE correo = %s AND password = %s"
+            sql = "SELECT id_usuario, nombre FROM usuario WHERE correo = %s AND password = %s"
             cursor.execute(sql, (correo, password))
             usuario = cursor.fetchone()
 
@@ -45,13 +45,13 @@ def login():
                 id_user = usuario['id_usuario']
                 
                 # Buscamos si es Administrador o Chofer
-                cursor.execute("SELECT id_administrador FROM Administrador WHERE id_usuario = %s", (id_user,))
+                cursor.execute("SELECT id_administrador FROM administrador WHERE id_usuario = %s", (id_user,))
                 admin = cursor.fetchone()
                 
                 if admin:
                     return jsonify({"id_usuario": id_user, "rol": "ADMIN"}), 200
                 
-                cursor.execute("SELECT id_chofer FROM Chofer WHERE id_usuario = %s", (id_user,))
+                cursor.execute("SELECT id_chofer FROM chofer WHERE id_usuario = %s", (id_user,))
                 chofer = cursor.fetchone()
                 
                 if chofer:
