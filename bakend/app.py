@@ -86,7 +86,7 @@ def obtener_rutas():
                     r.nombre AS nombre,
                     er.nombre AS estado
                 FROM Ruta r
-                INNER JOIN Estado_Ruta er ON r.id_estado_ruta = er.id_estado_ruta
+                INNER JOIN estado_ruta er ON r.id_estado_ruta = er.id_estado_ruta
             """
             cursor.execute(sql)
             rutas = cursor.fetchall()
@@ -159,8 +159,8 @@ def obtener_rutas_por_zona(nombre_zona):
                     r.nombre AS nombre,
                     er.nombre AS estado
                 FROM Ruta r
-                INNER JOIN Zona z ON r.id_zona = z.id_zona
-                INNER JOIN Estado_Ruta er ON r.id_estado_ruta = er.id_estado_ruta
+                INNER JOIN zona z ON r.id_zona = z.id_zona
+                INNER JOIN estado_ruta er ON r.id_estado_ruta = er.id_estado_ruta
                 WHERE z.nombre = %s
             """
             cursor.execute(sql, (nombre_zona,))
@@ -194,7 +194,7 @@ def alta_zona():
         nombre = datos.get('nombre')
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            cursor.execute("INSERT INTO Zona (nombre) VALUES (%s)", (nombre,))
+            cursor.execute("INSERT INTO zona (nombre) VALUES (%s)", (nombre,))
             conexion.commit()
         return jsonify({"mensaje": "Zona registrada correctamente"}), 201
     except Exception as e:
@@ -216,7 +216,7 @@ def alta_ruta():
 
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            cursor.execute("SELECT id_zona FROM Zona WHERE nombre = %s", (nombre_zona,))
+            cursor.execute("SELECT id_zona FROM zona WHERE nombre = %s", (nombre_zona,))
             resultado_zona = cursor.fetchone()
 
             if not resultado_zona:
@@ -251,7 +251,7 @@ def alta_parada():
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
             # Esta es la consulta correcta para tu tabla
-            sql = "INSERT INTO Parada (nombre_parada, id_ruta) VALUES (%s, %s)"
+            sql = "INSERT INTO parada (nombre_parada, id_ruta) VALUES (%s, %s)"
             cursor.execute(sql, (nombre, id_ruta))
             conexion.commit()
             
@@ -276,10 +276,10 @@ def registrar_cambio_ruta():
 
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
-            sql_cambio = "INSERT INTO Cambio_Ruta (id_ruta, fecha_inicio, descripcion) VALUES (%s, CURDATE(), %s)"
+            sql_cambio = "INSERT INTO cambio_ruta (id_ruta, fecha_inicio, descripcion) VALUES (%s, CURDATE(), %s)"
             cursor.execute(sql_cambio, (id_ruta, descripcion))
             
-            sql_notif = "INSERT INTO Notificacion (titulo, fecha_mensaje, id_ruta) VALUES (%s, NOW(), %s)"
+            sql_notif = "INSERT INTO notificacion (titulo, fecha_mensaje, id_ruta) VALUES (%s, NOW(), %s)"
             cursor.execute(sql_notif, (f"Cambio Operativo: {descripcion}", id_ruta))
             
             conexion.commit()
@@ -347,7 +347,7 @@ def registro():
                 if not cursor.fetchone():
                     return jsonify({"error": "Token inválido o ya utilizado"}), 400
             # 3. Insertar Usuario base
-            sql_usuario = """INSERT INTO Usuario (nombre, apellido_paterno, apellido_materno, correo, telefono, password) 
+            sql_usuario = """INSERT INTO usuario (nombre, apellido_paterno, apellido_materno, correo, telefono, password) 
                              VALUES (%s, %s, %s, %s, %s, %s)"""
             cursor.execute(sql_usuario, (nombre, apellido_p, apellido_m, correo, telefono, password))
             id_usuario_creado = cursor.lastrowid
@@ -358,13 +358,13 @@ def registro():
                 cursor.execute("INSERT INTO Pasajero (id_usuario) VALUES (%s)", (id_usuario_creado,))
             
             elif rol in ["CONDUCTOR", "CHOFER"]:
-                cursor.execute("INSERT INTO Chofer (id_usuario) VALUES (%s)", (id_usuario_creado,))
+                cursor.execute("INSERT INTO chofer (id_usuario) VALUES (%s)", (id_usuario_creado,))
                 cursor.execute("UPDATE tokens_registro SET usado = 1 WHERE token_autorizacion = %s", (token_enviado.strip(),))
             
             elif rol in ["ADMIN", "ADMINISTRADOR"]:
                 folio_asignado = f"ADM-{random.randint(1000, 9999)}"
-                cursor.execute("INSERT INTO Administrador (id_usuario, folio_unico) VALUES (%s, %s)", (id_usuario_creado, folio_asignado))
-                cursor.execute("UPDATE Usuario SET folio_unico = %s WHERE id_usuario = %s", (folio_asignado, id_usuario_creado))
+                cursor.execute("INSERT INTO administrador (id_usuario, folio_unico) VALUES (%s, %s)", (id_usuario_creado, folio_asignado))
+                cursor.execute("UPDATE usuario SET folio_unico = %s WHERE id_usuario = %s", (folio_asignado, id_usuario_creado))
                 cursor.execute("UPDATE tokens_registro SET usado = 1 WHERE token_autorizacion = %s", (token_enviado.strip(),))
 
             conexion.commit()
@@ -389,11 +389,11 @@ def actualizar_registro():
     try:
         with conexion.cursor() as cursor:
             # 1. Actualizar Unidad
-            sql_unidad = "UPDATE Unidad SET numero_economico = %s, placas = %s WHERE id_chofer = %s"
+            sql_unidad = "UPDATE unidad SET numero_economico = %s, placas = %s WHERE id_chofer = %s"
             cursor.execute(sql_unidad, (data['numero_economico'], data['placas'], data['id_chofer']))
             
             # 2. Actualizar Ruta (en la tabla de Asignación)
-            sql_ruta = "UPDATE Asignacion_Ruta SET id_ruta = %s WHERE id_chofer = %s"
+            sql_ruta = "UPDATE asignacion_ruta SET id_ruta = %s WHERE id_chofer = %s"
             cursor.execute(sql_ruta, (data['id_ruta'], data['id_chofer']))
             
             conexion.commit()
@@ -411,10 +411,10 @@ def obtener_estado_chofer(id_chofer):
                     u.numero_economico, 
                     u.placa, 
                     r.nombre AS nombre_ruta
-                FROM Chofer_Unidad cu
-                JOIN Unidad u ON cu.id_unidad = u.id_unidad
-                JOIN Asignacion_Ruta ar ON cu.id_chofer = ar.id_chofer
-                JOIN Ruta r ON ar.id_ruta = r.id_ruta
+                FROM chofer_Unidad cu
+                JOIN unidad u ON cu.id_unidad = u.id_unidad
+                JOIN asignacion_ruta ar ON cu.id_chofer = ar.id_chofer
+                JOIN ruta r ON ar.id_ruta = r.id_ruta
                 WHERE cu.id_chofer = %s
             """
             cursor.execute(sql, (id_chofer,))
@@ -442,13 +442,13 @@ def viajes_activos(zona):
                     c.id_control, c.hora_salida, r.nombre AS nombreRuta, 
                     u.numero_economico AS numeroEconomico, us.nombre AS choferNombre
                 FROM control_operativo c
-                JOIN Asignacion_Ruta ar ON c.id_asignacion = ar.id_asignacion
-                JOIN Ruta r ON ar.id_ruta = r.id_ruta
-                JOIN Chofer ch ON ar.id_chofer = ch.id_chofer
-                JOIN Usuario us ON ch.id_usuario = us.id_usuario
-                JOIN Chofer_Unidad cu ON ch.id_chofer = cu.id_chofer
-                JOIN Unidad u ON cu.id_unidad = u.id_unidad
-                JOIN Zona z ON r.id_zona = z.id_zona
+                JOIN asignacion_ruta ar ON c.id_asignacion = ar.id_asignacion
+                JOIN ruta r ON ar.id_ruta = r.id_ruta
+                JOIN chofer ch ON ar.id_chofer = ch.id_chofer
+                JOIN usuario us ON ch.id_usuario = us.id_usuario
+                JOIN chofer_unidad cu ON ch.id_chofer = cu.id_chofer
+                JOIN unidad u ON cu.id_unidad = u.id_unidad
+                JOIN zona z ON r.id_zona = z.id_zona
                 WHERE z.nombre = %s AND c.hora_llegada IS NULL
             """
             cursor.execute(sql, (zona.strip(),))
@@ -589,7 +589,7 @@ def vincular_unidad():
     try:
         with conexion.cursor() as cursor:
             # Busca si la unidad existe, si no, la crea
-            cursor.execute("SELECT id_unidad FROM Unidad WHERE numero_economico = %s", (data['numero_economico'],))
+            cursor.execute("SELECT id_unidad FROM unidad WHERE numero_economico = %s", (data['numero_economico'],))
             unidad = cursor.fetchone()
             id_unidad = unidad['id_unidad'] if unidad else None
             
@@ -627,11 +627,11 @@ def choferes_por_ruta(id_ruta):
                 SELECT 
                     ar.id_asignacion,
                     CONCAT('Unidad: ', u.numero_economico, ' - Chofer: ', us.nombre) AS infoDespliegue
-                FROM Asignacion_Ruta ar
-                JOIN Chofer ch ON ar.id_chofer = ch.id_chofer
-                JOIN Usuario us ON ch.id_usuario = us.id_usuario
-                JOIN Chofer_Unidad cu ON ch.id_chofer = cu.id_chofer
-                JOIN Unidad u ON cu.id_unidad = u.id_unidad
+                FROM asignacion_Ruta ar
+                JOIN chofer ch ON ar.id_chofer = ch.id_chofer
+                JOIN usuario us ON ch.id_usuario = us.id_usuario
+                JOIN chofer_unidad cu ON ch.id_chofer = cu.id_chofer
+                JOIN unidad u ON cu.id_unidad = u.id_unidad
                 WHERE ar.id_ruta = %s
             """
             cursor.execute(sql, (id_ruta,))
@@ -645,7 +645,7 @@ def asignar_ruta_chofer():
         conexion = conectar_bd()
         with conexion.cursor() as cursor:
             # Insertamos una nueva asignación con la fecha de hoy
-            sql = "INSERT INTO Asignacion_Ruta (id_chofer, id_ruta, fecha_asignacion) VALUES (%s, %s, CURDATE())"
+            sql = "INSERT INTO asignacion_ruta (id_chofer, id_ruta, fecha_asignacion) VALUES (%s, %s, CURDATE())"
             cursor.execute(sql, (data['id_chofer'], data['id_ruta']))
             conexion.commit()
         return jsonify({"mensaje": "Ruta asignada exitosamente"}), 201
@@ -750,7 +750,7 @@ def registrar_tarifas():
     cursor = None
     try:
         cursor = connection.cursor()
-        query = "INSERT INTO Configuracion_Tarifa (id_parametro, valor_actual) VALUES ('tarifa_base', %s), ('incremento_por_km', %s)"
+        query = "INSERT INTO configuracion_tarifa (id_parametro, valor_actual) VALUES ('tarifa_base', %s), ('incremento_por_km', %s)"
         cursor.execute(query, (data['tarifa_base'], data['incremento_km']))
         connection.commit()
         return jsonify({"mensaje": "Registrado exitosamente"}), 201
@@ -768,8 +768,8 @@ def modificar_tarifas():
     cursor = None
     try:
         cursor = connection.cursor()
-        cursor.execute("UPDATE Configuracion_Tarifa SET valor_actual = %s WHERE id_parametro = 'tarifa_base'", (data['tarifa_base'],))
-        cursor.execute("UPDATE Configuracion_Tarifa SET valor_actual = %s WHERE id_parametro = 'incremento_por_km'", (data['incremento_km'],))
+        cursor.execute("UPDATE configuracion_tarifa SET valor_actual = %s WHERE id_parametro = 'tarifa_base'", (data['tarifa_base'],))
+        cursor.execute("UPDATE configuracion_tarifa SET valor_actual = %s WHERE id_parametro = 'incremento_por_km'", (data['incremento_km'],))
         connection.commit()
         return jsonify({"mensaje": "Modificado exitosamente"}), 200
     except Exception as e:
@@ -792,20 +792,20 @@ def calcular_trayecto():
     try:
         # 1. Obtener IDs usando los nombres de tus tablas reales (Ruta y Parada)
         # Asegúrate de que las columnas sean 'nombre' y 'nombre_parada' según tus otros endpoints
-        cursor.execute("SELECT id_ruta FROM Ruta WHERE nombre = %s", (ruta_nombre,))
+        cursor.execute("SELECT id_ruta FROM ruta WHERE nombre = %s", (ruta_nombre,))
         id_ruta = cursor.fetchone()['id_ruta']
         
-        cursor.execute("SELECT id_parada FROM Parada WHERE nombre_parada = %s", (inicio_nombre,))
+        cursor.execute("SELECT id_parada FROM parada WHERE nombre_parada = %s", (inicio_nombre,))
         id_inicio = cursor.fetchone()['id_parada']
         
-        cursor.execute("SELECT id_parada FROM Parada WHERE nombre_parada = %s", (final_nombre,))
+        cursor.execute("SELECT id_parada FROM parada WHERE nombre_parada = %s", (final_nombre,))
         id_final = cursor.fetchone()['id_parada']
         
         # 2. Obtener Tarifas de tu tabla Configuracion_Tarifa
-        cursor.execute("SELECT valor_actual FROM Configuracion_Tarifa WHERE id_parametro = 'tarifa_base'")
+        cursor.execute("SELECT valor_actual FROM configuracion_tarifa WHERE id_parametro = 'tarifa_base'")
         base = float(cursor.fetchone()['valor_actual'])
         
-        cursor.execute("SELECT valor_actual FROM Configuracion_Tarifa WHERE id_parametro = 'incremento_por_km'")
+        cursor.execute("SELECT valor_actual FROM configuracion_tarifa WHERE id_parametro = 'incremento_por_km'")
         incremento = float(cursor.fetchone()['valor_actual'])
         
         # 3. Calcular costo (Distancia = diferencia de IDs de parada)
@@ -849,7 +849,7 @@ def buscar_unidad(numero):
     try:
         with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
             # Buscamos el ID por el número económico
-            sql = "SELECT id_unidad FROM Unidad WHERE numero_economico = %s"
+            sql = "SELECT id_unidad FROM unidad WHERE numero_economico = %s"
             cursor.execute(sql, (numero,))
             resultado = cursor.fetchone()
             
