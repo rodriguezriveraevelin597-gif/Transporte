@@ -781,7 +781,6 @@ def modificar_tarifas():
 @app.route('/calcular_trayecto', methods=['POST'])
 def calcular_trayecto():
     data = request.json
-    # Esperamos: ruta_nombre, inicio_nombre, final_nombre
     ruta_nombre = data.get('ruta_nombre')
     inicio_nombre = data.get('inicio_nombre')
     final_nombre = data.get('final_nombre')
@@ -790,30 +789,40 @@ def calcular_trayecto():
     cursor = connection.cursor(pymysql.cursors.DictCursor)
     
     try:
-        # 1. Obtener IDs usando los nombres de tus tablas reales (Ruta y Parada)
-        # Asegúrate de que las columnas sean 'nombre' y 'nombre_parada' según tus otros endpoints
+        # 1. Búsqueda segura de Ruta
         cursor.execute("SELECT id_ruta FROM ruta WHERE nombre = %s", (ruta_nombre,))
-        id_ruta = cursor.fetchone()['id_ruta']
+        ruta = cursor.fetchone()
+        if not ruta:
+            return jsonify({"error": f"Ruta '{ruta_nombre}' no encontrada"}), 404
+        id_ruta = ruta['id_ruta']
         
+        # 2. Búsqueda segura de Paradas
         cursor.execute("SELECT id_parada FROM parada WHERE nombre_parada = %s", (inicio_nombre,))
-        id_inicio = cursor.fetchone()['id_parada']
+        inicio = cursor.fetchone()
+        if not inicio:
+            return jsonify({"error": f"Parada inicial '{inicio_nombre}' no encontrada"}), 404
+        id_inicio = inicio['id_parada']
         
         cursor.execute("SELECT id_parada FROM parada WHERE nombre_parada = %s", (final_nombre,))
-        id_final = cursor.fetchone()['id_parada']
+        final = cursor.fetchone()
+        if not final:
+            return jsonify({"error": f"Parada final '{final_nombre}' no encontrada"}), 404
+        id_final = final['id_parada']
         
-        # 2. Obtener Tarifas de tu tabla Configuracion_Tarifa
+        # 3. Búsqueda de Tarifas
         cursor.execute("SELECT valor_actual FROM configuracion_tarifa WHERE id_parametro = 'tarifa_base'")
-        base = float(cursor.fetchone()['valor_actual'])
+        res_base = cursor.fetchone()
+        base = float(res_base['valor_actual']) if res_base else 0.0
         
         cursor.execute("SELECT valor_actual FROM configuracion_tarifa WHERE id_parametro = 'incremento_por_km'")
-        incremento = float(cursor.fetchone()['valor_actual'])
+        res_inc = cursor.fetchone()
+        incremento = float(res_inc['valor_actual']) if res_inc else 0.0
         
-        # 3. Calcular costo (Distancia = diferencia de IDs de parada)
+        # 4. Cálculo
         num_paradas = abs(id_final - id_inicio)
         costo_total = base + (num_paradas * incremento)
         
-        # 4. Registrar en 'trayecto' (Tu tabla de aprendizaje)
-        # Nota: Asegúrate que esta tabla tenga UNIQUE KEY en (id_ruta, id_parada_inicio, id_parada_fin)
+        # 5. Registro
         query = """
             INSERT INTO trayecto (id_ruta, id_parada_inicio, id_parada_fin, costo, frecuencia)
             VALUES (%s, %s, %s, %s, 1)
@@ -830,7 +839,6 @@ def calcular_trayecto():
     finally:
         cursor.close()
         connection.close()
-
 
 #====================Reportes===================
 @app.route('/api/tipos_reporte', methods=['GET'])
