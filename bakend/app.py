@@ -781,12 +781,16 @@ def modificar_tarifas():
 @app.route('/calcular_trayecto', methods=['POST'])
 def calcular_trayecto():
     data = request.json
-    ruta_nombre = data.get('ruta_nombre')
-    inicio_nombre = data.get('inicio_nombre')
-    final_nombre = data.get('final_nombre')
+    # Limpiamos los strings para evitar problemas de espacios accidentales
+    ruta_nombre = data.get('ruta_nombre', '').strip()
+    inicio_nombre = data.get('inicio_nombre', '').strip()
+    final_nombre = data.get('final_nombre', '').strip()
 
+    # Validación preventiva
     if not all([ruta_nombre, inicio_nombre, final_nombre]):
-        return jsonify({"error": "Faltan datos en la petición"}), 400
+        return jsonify({"error": "Faltan datos o campos vacíos"}), 400
+
+    print(f"DEBUG: Procesando trayecto -> Ruta: {ruta_nombre}, Inicio: {inicio_nombre}, Fin: {final_nombre}")
 
     connection = conectar_bd()
     try:
@@ -794,19 +798,28 @@ def calcular_trayecto():
             # 1. Obtener ID Ruta
             cursor.execute("SELECT id_ruta FROM Ruta WHERE nombre = %s", (ruta_nombre,))
             ruta = cursor.fetchone()
-            if not ruta: return jsonify({"error": "Ruta no encontrada"}), 404
+            if not ruta: 
+                return jsonify({"error": f"Ruta '{ruta_nombre}' no encontrada"}), 404
             id_ruta = ruta['id_ruta']
 
-            # 2. Obtener ORDEN de las paradas (Más seguro que el ID)
-            cursor.execute("SELECT orden FROM Parada WHERE nombre_parada = %s AND id_ruta = %s", (inicio_nombre, id_ruta))
+            # 2. Obtener ORDEN de las paradas (Validando que exista la columna 'orden')
+            # Nota: Si tu columna es NULL, usamos COALESCE para tratarlo como 0
+            cursor.execute("""
+                SELECT COALESCE(orden, 0) as orden 
+                FROM Parada WHERE nombre_parada = %s AND id_ruta = %s
+            """, (inicio_nombre, id_ruta))
             inicio = cursor.fetchone()
-            if not inicio: return jsonify({"error": "Parada inicial no encontrada"}), 404
             
-            cursor.execute("SELECT orden FROM Parada WHERE nombre_parada = %s AND id_ruta = %s", (final_nombre, id_ruta))
+            cursor.execute("""
+                SELECT COALESCE(orden, 0) as orden 
+                FROM Parada WHERE nombre_parada = %s AND id_ruta = %s
+            """, (final_nombre, id_ruta))
             final = cursor.fetchone()
-            if not final: return jsonify({"error": "Parada final no encontrada"}), 404
 
-            # 3. Cálculo de tarifa
+            if not inicio or not final:
+                return jsonify({"error": "Una de las paradas no existe en esta ruta"}), 404
+
+            # 3. Obtener Tarifas
             cursor.execute("SELECT valor_actual FROM configuracion_tarifa WHERE id_parametro = 'tarifa_base'")
             res_base = cursor.fetchone()
             base = float(res_base['valor_actual']) if res_base else 0.0
@@ -815,15 +828,17 @@ def calcular_trayecto():
             res_inc = cursor.fetchone()
             incremento = float(res_inc['valor_actual']) if res_inc else 0.0
 
-            # 4. Lógica de costo real
-            num_paradas = abs(final['orden'] - inicio['orden'])
+            # 4. Cálculo de costo
+            num_paradas = abs(int(final['orden']) - int(inicio['orden']))
             costo_total = base + (num_paradas * incremento)
 
             # 5. Registro (Insertar o actualizar)
             query = """
                 INSERT INTO trayecto (id_ruta, id_parada_inicio, id_parada_fin, costo, frecuencia)
-                VALUES (%s, (SELECT id_parada FROM Parada WHERE nombre_parada=%s AND id_ruta=%s), 
-                            (SELECT id_parada FROM Parada WHERE nombre_parada=%s AND id_ruta=%s), %s, 1)
+                VALUES (%s, 
+                        (SELECT id_parada FROM Parada WHERE nombre_parada=%s AND id_ruta=%s), 
+                        (SELECT id_parada FROM Parada WHERE nombre_parada=%s AND id_ruta=%s), 
+                        %s, 1)
                 ON DUPLICATE KEY UPDATE frecuencia = frecuencia + 1, costo = %s
             """
             cursor.execute(query, (id_ruta, inicio_nombre, id_ruta, final_nombre, id_ruta, costo_total, costo_total))
@@ -832,8 +847,9 @@ def calcular_trayecto():
             return jsonify({"costo": float(costo_total)}), 200
 
     except Exception as e:
-        print(f"DEBUG ERROR: {e}") # Mira esto en tu terminal
-        return jsonify({"error": str(e)}), 500
+        print(f"ERROR CRÍTICO: {str(e)}")
+        # Importante: si hay error, el cliente recibe 500 y el mensaje de error
+        return jsonify({"error": f"Error interno: {str(e)}"}), 500
     finally:
         connection.close()
 #====================Reportes===================
