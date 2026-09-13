@@ -17,7 +17,7 @@ def conectar_bd():
         port=12079,
         user='avnadmin',
        password=os.environ.get('DB_PASSWORD'),  
-        database='defaultdb',
+        database='transporte_db',
         ssl={'ssl_mode': 'REQUIRED'},  
         cursorclass=pymysql.cursors.DictCursor
     )
