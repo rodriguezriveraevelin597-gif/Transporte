@@ -16,7 +16,7 @@ def conectar_bd():
         host='transporte-2026v2app1-rodriguezriveraevelin847-e301.c.aivencloud.com',
         port=12079,
         user='avnadmin',
-        password='AQUÍ_VA_TU_CONTRASEÑA_DE_AIVEN',  
+       password=os.environ.get('DB_PASSWORD'),  
         database='defaultdb',
         ssl={'ssl_mode': 'REQUIRED'},  
         cursorclass=pymysql.cursors.DictCursor
