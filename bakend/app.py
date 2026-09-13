@@ -13,11 +13,12 @@ CORS(app)  # Permite que Android Studio se conecte sin bloqueos de red de origen
 # =====================================================
 def conectar_bd():
     return pymysql.connect(
-        host='hayabusa.proxy.rlwy.net', 
-        port=48735,
-        user='root',
-        password='yjKxlDkeRyQBoFHxYGneCKJeHYAvpeeQ',
-        database='railway',
+        host='transporte-2026v2app1-rodriguezriveraevelin847-e301.c.aivencloud.com',
+        port=12079,
+        user='avnadmin',
+        password='AQUÍ_VA_TU_CONTRASEÑA_DE_AIVEN',  
+        database='defaultdb',
+        ssl={'ssl_mode': 'REQUIRED'},  
         cursorclass=pymysql.cursors.DictCursor
     )
 
@@ -523,7 +524,7 @@ def registrar_salida():
     id_ruta = data.get('id_ruta')
     hora_salida = data.get('hora_salida')
     
-    # 🚀 LLAMAMOS A LA FUNCIÓN CORRECTA
+    # FUNCIÓN CORRECTA
     id_admin = obtener_id_admin_valido(data.get('id_admin'))
     
     conexion = conectar_bd()
@@ -594,7 +595,7 @@ def vincular_unidad():
             id_unidad = unidad['id_unidad'] if unidad else None
             
             if not id_unidad:
-                cursor.execute("INSERT INTO Unidad (placa, numero_economico) VALUES (%s, %s)", (data.get('placas', 'SIN-PLACAS'), data['numero_economico']))
+                cursor.execute("INSERT INTO unidad (placa, numero_economico) VALUES (%s, %s)", (data.get('placas', 'SIN-PLACAS'), data['numero_economico']))
                 id_unidad = cursor.lastrowid
             
             cursor.execute("DELETE FROM chofer_unidad WHERE id_chofer = %s", (data['id_chofer'],))
@@ -626,7 +627,7 @@ def choferes_por_ruta(id_ruta):
             sql = """
                 SELECT 
                     ar.id_asignacion,
-                    CONCAT('Unidad: ', u.numero_economico, ' - Chofer: ', us.nombre) AS infoDespliegue
+                    CONCAT('unidad: ', u.numero_economico, ' - chofer: ', us.nombre) AS infoDespliegue
                 FROM asignacion_Ruta ar
                 JOIN chofer ch ON ar.id_chofer = ch.id_chofer
                 JOIN usuario us ON ch.id_usuario = us.id_usuario
@@ -806,13 +807,13 @@ def calcular_trayecto():
             # Nota: Si tu columna es NULL, usamos COALESCE para tratarlo como 0
             cursor.execute("""
                 SELECT COALESCE(orden, 0) as orden 
-                FROM Parada WHERE nombre_parada = %s AND id_ruta = %s
+                FROM parada WHERE nombre_parada = %s AND id_ruta = %s
             """, (inicio_nombre, id_ruta))
             inicio = cursor.fetchone()
             
             cursor.execute("""
                 SELECT COALESCE(orden, 0) as orden 
-                FROM Parada WHERE nombre_parada = %s AND id_ruta = %s
+                FROM parada WHERE nombre_parada = %s AND id_ruta = %s
             """, (final_nombre, id_ruta))
             final = cursor.fetchone()
 
@@ -836,8 +837,8 @@ def calcular_trayecto():
             query = """
                 INSERT INTO trayecto (id_ruta, id_parada_inicio, id_parada_fin, costo, frecuencia)
                 VALUES (%s, 
-                        (SELECT id_parada FROM Parada WHERE nombre_parada=%s AND id_ruta=%s), 
-                        (SELECT id_parada FROM Parada WHERE nombre_parada=%s AND id_ruta=%s), 
+                        (SELECT id_parada FROM parada WHERE nombre_parada=%s AND id_ruta=%s), 
+                        (SELECT id_parada FROM parada WHERE nombre_parada=%s AND id_ruta=%s), 
                         %s, 1)
                 ON DUPLICATE KEY UPDATE frecuencia = frecuencia + 1, costo = %s
             """
