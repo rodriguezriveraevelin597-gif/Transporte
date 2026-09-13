@@ -11,17 +11,19 @@ CORS(app)  # Permite que Android Studio se conecte sin bloqueos de red de origen
 # =====================================================
 # CONFIGURACIÓN DE LA CONEXIÓN A LA BASE DE DATOS
 # =====================================================
+import os
+import pymysql
+
 def conectar_bd():
     return pymysql.connect(
         host='transporte-2026v2app1-rodriguezriveraevelin847-e301.c.aivencloud.com',
         port=12079,
         user='avnadmin',
-        password=os.environ.get('DB_PASS') or os.environ.get('DB_PASSWORD'), 
+        password=os.environ.get('DB_PASS') or os.environ.get('DB_PASSWORD'),
         database='defaultdb',
-        ssl={'ssl_mode': 'REQUIRED'},
+        ssl={'ssl': {}},  # Esto fuerza una conexión SSL segura compatible con Aiven en contenedores Linux
         cursorclass=pymysql.cursors.DictCursor
     )
-
 
 # =====================================================
 # ENDPOINT: LOGIN (Validación de Credenciales y Roles)
