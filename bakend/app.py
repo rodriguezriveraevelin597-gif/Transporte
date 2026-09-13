@@ -797,7 +797,7 @@ def calcular_trayecto():
     try:
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
             # 1. Obtener ID Ruta
-            cursor.execute("SELECT id_ruta FROM Ruta WHERE nombre = %s", (ruta_nombre,))
+            cursor.execute("SELECT id_ruta FROM ruta WHERE nombre = %s", (ruta_nombre,))
             ruta = cursor.fetchone()
             if not ruta: 
                 return jsonify({"error": f"Ruta '{ruta_nombre}' no encontrada"}), 404
