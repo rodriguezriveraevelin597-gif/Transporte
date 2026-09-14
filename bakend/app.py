@@ -16,12 +16,11 @@ import pymysql
 
 def conectar_bd():
     return pymysql.connect(
-        host='transporte-2026v2app1-rodriguezriveraevelin847-e301.c.aivencloud.com',
-        port=12079,
-        user='avnadmin',
-        password=os.environ.get('DB_PASS') or os.environ.get('DB_PASSWORD'),
-        database='defaultdb',
-        ssl={'ssl': {}},  # Esto fuerza una conexión SSL segura compatible con Aiven en contenedores Linux
+        host=os.environ.get('DB_HOST'),
+        port=int(os.environ.get('DB_PORT', 3306)),
+        user=os.environ.get('DB_USER'),
+        password=os.environ.get('DB_PASS'),
+        database=os.environ.get('DB_NAME'),
         cursorclass=pymysql.cursors.DictCursor
     )
 
