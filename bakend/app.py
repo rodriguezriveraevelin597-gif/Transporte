@@ -17,11 +17,11 @@ import pymysql
 def conectar_bd():
     return pymysql.connect(
         host=os.environ.get('DB_HOST'),
-        port=int(os.environ.get('DB_PORT'),
+        port=int(os.environ.get('DB_PORT', 3306)),
         user=os.environ.get('DB_USER'),
         password=os.environ.get('DB_PASS'),
         database=os.environ.get('DB_NAME'),
-        cursorclass=pymysql.cursors.DictCursor
+        cursorclass=DictCursor
     )
 
 # =====================================================
