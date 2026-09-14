@@ -14,7 +14,7 @@ CORS(app)  # Permite que Android Studio se conecte sin bloqueos de red de origen
 import os
 import pymysql
 
-def conectar_bd():
+
 def conectar_bd():
     return pymysql.connect(
         host=os.environ.get('DB_HOST'),
