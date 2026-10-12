@@ -858,7 +858,7 @@ def obtener_tipos():
     conexion = conectar_bd()
     try:
         with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
-            cursor.execute("SELECT * FROM Tipo_Reporte")
+            cursor.execute("SELECT * FROM tipo_reporte")
             return jsonify(cursor.fetchall())
     finally:
         conexion.close()
